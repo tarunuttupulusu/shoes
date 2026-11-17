@@ -1,18 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Lenis from 'lenis'
+import { CartProvider } from './context/CartContext'
+import { AuthProvider } from './auth/AuthContext'
+import { AuthModal } from './auth/AuthModal'
 import { Header } from './components/Header'
 import { DroneScene } from './components/DroneScene'
 import { Hero } from './components/Hero'
 import { ProblemSection } from './components/ProblemSection'
 import { GearSection } from './components/GearSection'
+import { ShoeShowcase } from './components/ShoeShowcase'
+import { MensSection } from './components/mens'
+import { WomensSection } from './components/womens'
 import { SolutionsSection } from './components/SolutionsSection'
 import { CapabilitiesSection } from './components/CapabilitiesSection'
 import { SoftwareSection } from './components/SoftwareSection'
 import { Footer } from './components/Footer'
+import { CartDrawer } from './components/CartDrawer'
+import { AdminLayout } from './admin'
 
-export function App() {
+function Storefront() {
   const [scrollProgress, setScrollProgress] = useState(0)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
   const lenisRef = useRef<Lenis | null>(null)
   const problemRef = useRef<HTMLDivElement>(null)
 
@@ -56,7 +65,6 @@ export function App() {
   // Mouse move handler for interactive drone attitude follow
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      // Normalize from -1 to 1
       const x = (e.clientX / window.innerWidth) * 2 - 1
       const y = (e.clientY / window.innerHeight) * 2 - 1
       setMousePos({ x, y })
@@ -84,10 +92,16 @@ export function App() {
       </div>
 
       {/* Header */}
-      <Header />
+      <Header onOpenAuth={() => setIsAuthOpen(true)} />
 
       {/* 3D Interactive Drone Scene */}
       <DroneScene scrollProgress={scrollProgress} mousePos={mousePos} />
+
+      {/* Cart Drawer */}
+      <CartDrawer />
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 
       {/* Page Content */}
       <main className="relative z-10 flex flex-col">
@@ -98,6 +112,22 @@ export function App() {
         </div>
 
         <GearSection />
+
+        {/* Flagship & Children's Footwear Showcase */}
+        <section id="footwear">
+          <ShoeShowcase />
+        </section>
+
+        {/* Dedicated Men's Footwear Section */}
+        <section id="mens" className="border-t border-[#24363F]/10">
+          <MensSection />
+        </section>
+
+        {/* Dedicated Women's Footwear Section */}
+        <section id="womens" className="border-t border-[#24363F]/10">
+          <WomensSection />
+        </section>
+
         <SolutionsSection />
         <CapabilitiesSection />
         <SoftwareSection />
@@ -106,6 +136,35 @@ export function App() {
       {/* Footer */}
       <Footer />
     </div>
+  )
+}
+
+export function App() {
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.hash.startsWith('#admin')
+    }
+    return false
+  })
+
+  useEffect(() => {
+    const handleHash = () => {
+      setIsAdmin(window.location.hash.startsWith('#admin'))
+    }
+    window.addEventListener('hashchange', handleHash)
+    return () => window.removeEventListener('hashchange', handleHash)
+  }, [])
+
+  return (
+    <AuthProvider>
+      <CartProvider>
+        {isAdmin ? (
+          <AdminLayout onExit={() => { window.location.hash = '' }} />
+        ) : (
+          <Storefront />
+        )}
+      </CartProvider>
+    </AuthProvider>
   )
 }
 
